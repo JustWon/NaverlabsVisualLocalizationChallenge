@@ -44,8 +44,8 @@ parser.add_argument('--momentum', type=float, default=0.9, help='Momentum for SG
 parser.add_argument('--nocuda', action='store_true', help='Dont use cuda')
 parser.add_argument('--threads', type=int, default=8, help='Number of threads for each data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='Random seed to use.')
-parser.add_argument('--dataPath', type=str, default='/nfs/ibrahimi/data/', help='Path for centroid data.')
-parser.add_argument('--runsPath', type=str, default='/nfs/ibrahimi/runs/', help='Path to save runs to.')
+parser.add_argument('--dataPath', type=str, default='/home/ubuntu/Desktop/pytorch-NetVlad/data/', help='Path for centroid data.')
+parser.add_argument('--runsPath', type=str, default='/home/ubuntu/Desktop/pytorch-NetVlad/runs/', help='Path to save runs to.')
 parser.add_argument('--savePath', type=str, default='checkpoints', 
         help='Path to save checkpoints to in logdir. Default=checkpoints/')
 parser.add_argument('--cachePath', type=str, default=environ['TMPDIR'], help='Path to save cache to.')
@@ -110,8 +110,7 @@ def train(epoch):
         print('Cached:', torch.cuda.memory_cached())
 
         model.train()
-        for iteration, (query, positives, negatives, 
-                negCounts, indices) in enumerate(training_data_loader, startIter):
+        for iteration, (query, positives, negatives, negCounts, indices) in enumerate(training_data_loader, startIter):
             # some reshaping to put query, pos, negs in a single (N, 3, H, W) tensor
             # where N = batchSize * (nQuery + nPos + nNeg)
             if query is None: continue # in case we get an empty batch
@@ -269,7 +268,7 @@ def get_clusters(cluster_set):
         
         print('====> Clustering..')
         niter = 100
-        kmeans = faiss.Kmeans(encoder_dim, opt.num_clusters, niter, verbose=False)
+        kmeans = faiss.Kmeans(encoder_dim, opt.num_clusters, niter=niter, verbose=False)
         kmeans.train(dbFeat[...])
 
         print('====> Storing centroids', kmeans.centroids.shape)
