@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def intrinsic_params(camera_model):
     if (camera_model == '22970285' or 
@@ -101,6 +102,29 @@ def placeRecognitionTopFive(dataset, predictions, query_idx, mode='test', viz=Fa
     
     return query_item, pred_list
 
+
+def placeRecognitionAll(dataset, predictions, query_idx, mode='test'):
+    
+    query_image_full_path = dataset.dbStruct.q_image[query_idx]
+    query_img = Image.open(query_image_full_path)
+    
+    if (mode=='val' or mode=='train'):
+        query_pose = dataset.dbStruct.q_full_pose[query_idx]
+    else:
+        query_pose = None
+    
+    pred_list = []
+    for rank in range(20):
+        pred_image_full_path = dataset.dbStruct.db_image[predictions[query_idx][rank]]
+        pred_img = Image.open(pred_image_full_path) 
+        pred_pose = dataset.dbStruct.db_full_pose[predictions[query_idx][rank]]
+        
+        pred_list.append([pred_image_full_path, pred_img, pred_pose])
+    
+    query_item = [query_image_full_path, query_img, query_pose]
+    
+    return query_item, pred_list
+
 def projection(img, _points, _A, _Rt, thickness=1):
 
     projected_img = np.ones_like(img,dtype=float)*np.inf
@@ -133,3 +157,33 @@ def projection(img, _points, _A, _Rt, thickness=1):
             projected_img[t_y-thickness:t_y+thickness, t_x-thickness:t_x+thickness] = transformed_points[i,:3]
 
     return projected_img
+
+
+import pyquaternion as pyq
+import math
+from scipy.spatial.transform import Rotation as R
+
+def pose_eval(query_rot, query_trans, GT_pose):
+    
+    GT_Rt = np.eye(4)
+    GT_Rt[:3,3] = GT_pose[:3]
+    (GT_qw, GT_qx, GT_qy, GT_qz) = GT_pose[3:]
+    GT_Rt[:3,:3] = R.from_quat([GT_qx,GT_qy,GT_qz,GT_qw]).as_matrix()
+    
+    query_quaternion = R.from_matrix(query_rot).as_quat()
+    query_quaternion = pyq.Quaternion(query_quaternion[3],query_quaternion[0],query_quaternion[1],query_quaternion[2])
+    GT_quaternion = pyq.Quaternion(GT_qw,GT_qx,GT_qy,GT_qz)
+
+    # Get the 3D difference between these two orientations
+    qd = GT_quaternion.conjugate * query_quaternion
+
+    # Calculate Euler angles from this difference quaternion
+    phi   = math.atan2( 2 * (qd.w * qd.x + qd.y * qd.z), 1 - 2 * (qd.x**2 + qd.y**2) )
+    theta = math.asin ( 2 * (qd.w * qd.y - qd.z * qd.x) )
+    psi   = math.atan2( 2 * (qd.w * qd.z + qd.x * qd.y), 1 - 2 * (qd.y**2 + qd.z**2) )
+
+    print('Difference')
+    print('phi \t: ', phi* 180 / 3.141592)
+    print('theta \t: ', theta* 180 / 3.141592)
+    print('psi \t: ', psi* 180 / 3.141592)
+    print('trans\t: ',np.linalg.norm(query_trans- GT_pose[:3]))

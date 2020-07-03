@@ -1,4 +1,4 @@
-import numpy as np
+ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
@@ -97,6 +97,29 @@ def placeRecognitionTopFive(dataset, predictions, query_idx, mode='test', viz=Fa
     
     if (viz):
         plt.show()
+    
+    query_item = [query_image_full_path, query_img, query_pose]
+    
+    return query_item, pred_list
+
+
+def placeRecognitionAll(dataset, predictions, query_idx, mode='test'):
+    
+    query_image_full_path = dataset.dbStruct.q_image[query_idx]
+    query_img = Image.open(query_image_full_path)
+    
+    if (mode=='val' or mode=='train'):
+        query_pose = dataset.dbStruct.q_full_pose[query_idx]
+    else:
+        query_pose = None
+    
+    pred_list = []
+    for rank in range(20):
+        pred_image_full_path = dataset.dbStruct.db_image[predictions[query_idx][rank]]
+        pred_img = Image.open(pred_image_full_path) 
+        pred_pose = dataset.dbStruct.db_full_pose[predictions[query_idx][rank]]
+        
+        pred_list.append([pred_image_full_path, pred_img, pred_pose])
     
     query_item = [query_image_full_path, query_img, query_pose]
     
